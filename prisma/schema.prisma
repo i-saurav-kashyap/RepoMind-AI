@@ -1,0 +1,61 @@
+// RepoMind AI — data model
+// Dev uses SQLite for zero-infra local runs. For production, switch the
+// datasource provider to "postgresql" and point DATABASE_URL at a Postgres
+// instance (pgvector-enabled for the future RAG embedding store). The models
+// below are written to port cleanly: JSON blobs are stored as TEXT strings,
+// which is provider-agnostic.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum AnalysisStatus {
+  PENDING
+  CLONING
+  ANALYZING
+  COMPLETED
+  FAILED
+}
+
+model Analysis {
+  id        String   @id @default(cuid())
+  repoUrl   String
+  owner     String
+  name      String
+  status    String   @default("PENDING") // see AnalysisStatus
+  error     String?
+
+  // Denormalized repo metadata for fast list rendering
+  description String?
+  stars       Int     @default(0)
+  forks       Int     @default(0)
+  primaryLang String?
+  fileCount   Int     @default(0)
+
+  // Full structured analysis payload (AnalysisResult), serialized as JSON text.
+  result String?
+
+  messages  ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([owner, name])
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  role       String   // "user" | "assistant"
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@index([analysisId])
+}
