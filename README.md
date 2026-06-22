@@ -14,8 +14,8 @@ This is a **working vertical slice** of the full product spec — a real end-to-
 | Backend | Next.js route handlers | NestJS microservice (logic already isolated in `src/lib`) |
 | Data fetch | GitHub REST API | + git clone worker for private/deep analysis |
 | AI | Anthropic Claude via `src/lib/ai` (provider-agnostic) | + OpenAI backend behind same interface |
-| DB | Prisma + SQLite | Prisma + PostgreSQL |
-| Queue | inline background promise | BullMQ + Redis worker calling `runAnalysis()` |
+| DB | Prisma + Postgres (Neon) | + pgvector extension |
+| Queue | Next.js `after()` background task | BullMQ + Redis worker calling `runAnalysis()` |
 | RAG | full-context prompting | pgvector embeddings store |
 
 ## Getting started
@@ -27,9 +27,10 @@ npm install
 # configure secrets
 cp .env.example .env
 #  → add ANTHROPIC_API_KEY (required)
-#  → add GITHUB_TOKEN (optional, lifts rate limit 60 → 5000/hr)
+#  → add DATABASE_URL + DIRECT_URL (free Postgres from neon.tech)
+#  → add GITHUB_TOKEN (optional: analyze private repos, lift rate limits)
 
-# create the local SQLite database
+# create the database tables
 npm run db:push
 
 # run
@@ -37,6 +38,8 @@ npm run dev
 ```
 
 Open http://localhost:3000, paste a repo (try `vercel/next.js`), and watch the analysis run.
+
+**Deploying?** See [DEPLOY.md](./DEPLOY.md) for one-click Vercel + Neon setup.
 
 ## How it works
 
@@ -59,7 +62,7 @@ chat: POST /api/chat ─▶ streamed Claude answer grounded in the stored repo c
 - `src/lib/ai/prompts.ts` — context compression + analysis & chat prompts
 - `src/lib/analyzer.ts` — orchestration (the unit a BullMQ worker would run)
 - `src/components/dashboard/` — the 11-tab intelligence dashboard
-- `prisma/schema.prisma` — data model (SQLite dev → Postgres prod)
+- `prisma/schema.prisma` — Postgres data model (pgvector-ready)
 
 ## Roadmap to the full spec
 

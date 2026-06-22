@@ -1,17 +1,18 @@
 // RepoMind AI — data model
-// Dev uses SQLite for zero-infra local runs. For production, switch the
-// datasource provider to "postgresql" and point DATABASE_URL at a Postgres
-// instance (pgvector-enabled for the future RAG embedding store). The models
-// below are written to port cleanly: JSON blobs are stored as TEXT strings,
-// which is provider-agnostic.
+// Postgres (e.g. Neon, Vercel Postgres, Supabase). Works the same locally and
+// on Vercel. `directUrl` is used for schema sync / migrations when DATABASE_URL
+// points at a connection pooler (pgbouncer); set both from your provider. The
+// instance can later enable pgvector for the RAG embedding store. JSON blobs
+// are stored as TEXT for portability.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum AnalysisStatus {
